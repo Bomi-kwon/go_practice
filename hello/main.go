@@ -110,7 +110,7 @@ func DeleteStudentHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound) // 해당 id의 학생 정보가 없으면 404 상태 코드 반환
 		return
 	}
-	delete(students, id)
+	delete(students, id) // go안에 내장되어 있는 맵 속 데이터 삭제 함수
 	w.WriteHeader(http.StatusOK)
 }
 
