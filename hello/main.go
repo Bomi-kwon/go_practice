@@ -17,6 +17,11 @@ func barHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/bar", barHandler) // /bar 경로로 요청이 오면 barHandler 함수를 실행
-	http.ListenAndServe(":8080", nil)   // 8080번 포트로 서버 실행
+	mux := http.NewServeMux() // 라우터 생성
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, World!")
+	})
+	mux.HandleFunc("/bar", barHandler)
+
+	http.ListenAndServe(":8080", mux) // mux 인스턴스
 }
