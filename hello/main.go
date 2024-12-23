@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -36,6 +37,9 @@ func MakeWebHandler() http.Handler { // 핸들러 인스턴스(라우터) 생성
 	mux := mux.NewRouter()
 	mux.HandleFunc("/students", GetStudentListHandler).Methods("GET")
 	// "/students" 로 들어오는 GET 요청을 받을 때만 GetStudentListHandler 핸들러 동작
+	mux.HandleFunc("/students/{id:[0-9]+}", GetStudentHandler).Methods("GET")
+	// "/students" 아래 숫자로 된 경로 오면 GetStudentHandler 핸들러 동작
+	// gorilla/mux에서 자동으로 id값을 내부 map에 저장
 
 	students = make(map[int]Student) // 임시 데이터 생성
 	students[0] = Student{1, "짱구", 5, 100}
@@ -56,6 +60,19 @@ func GetStudentListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(list)
+}
+
+func GetStudentHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)               // 저장했던 id값 읽어오기
+	id, _ := strconv.Atoi(vars["id"]) // 문자열을 정수로 변환
+	student, ok := students[id]       // 해당 id의 학생 정보 읽기
+	if !ok {
+		w.WriteHeader(http.StatusNotFound) // 해당 id의 학생 정보가 없으면 404 상태 코드 반환
+		return
+	}
+	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(student)
 }
 
 func main() {
