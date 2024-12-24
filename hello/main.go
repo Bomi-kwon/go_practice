@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
-	"sort"
 	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
 type Student struct {
@@ -35,25 +33,11 @@ func (s student_arr) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func MakeWebHandler() http.Handler { // 핸들러 인스턴스(라우터) 생성
-	mux := mux.NewRouter()
-
-	// 1. 학생 리스트 조회
-	mux.HandleFunc("/students", GetStudentListHandler).Methods("GET")
-	// "/students" 로 들어오는 GET 요청을 받을 때만 GetStudentListHandler 핸들러 동작
-
-	// 2. 학생 상세 조회
-	mux.HandleFunc("/students/{id:[0-9]+}", GetStudentHandler).Methods("GET")
-	// "/students" 아래 숫자로 된 경로 오면 GetStudentHandler 핸들러 동작
-	// gorilla/mux에서 자동으로 id값을 내부 map에 저장
-
-	// 3. 학생 추가
-	mux.HandleFunc("/students", PostStudentHandler).Methods("POST")
-	// "/students" 로 들어오는 POST 요청을 받을 때만 PostStudentHandler 핸들러 동작
-
-	// 4. 학생 삭제
-	mux.HandleFunc("/students/{id:[0-9]+}", DeleteStudentHandler).Methods("DELETE")
-	// "/students" 아래 숫자로 된 경로 오면 DeleteStudentHandler 핸들러 동작
+func SetupHandler(g *gin.Engine) { // 핸들러 인스턴스(라우터) 생성
+	g.GET("/students", GetStudentListHandler)
+	g.GET("/student/:id", GetStudentHandler)
+	g.POST("/student", PostStudentHandler)
+	g.DELETE("/student/:id", DeleteStudentHandler)
 
 	students = make(map[int]Student) // 임시 데이터 생성
 	students[0] = Student{1, "짱구", 5, 100}
@@ -63,57 +47,64 @@ func MakeWebHandler() http.Handler { // 핸들러 인스턴스(라우터) 생성
 	students[4] = Student{5, "철수", 6, 90}
 
 	lastId = 5
-
-	return mux
 }
 
-func GetStudentListHandler(w http.ResponseWriter, r *http.Request) {
+func GetStudentListHandler(c *gin.Context) {
 	list := make(student_arr, 0)
 	for _, student := range students {
-		list = append(list, student) // 학생 목록을 슬라이스에 복사
+		list = append(list, student)
 	}
-	sort.Sort(list) // map은 정렬 불가능하고 슬라이스만 가능해서..
-	w.Header().Add("content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(list)
+	c.JSON(http.StatusOK, list) // 학생 목록을 JSON 형식으로 반환
 }
 
-func GetStudentHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)               // 저장했던 id값 읽어오기
-	id, _ := strconv.Atoi(vars["id"]) // 문자열을 정수로 변환
-	student, ok := students[id]       // 해당 id의 학생 정보 읽기
-	if !ok {
-		w.WriteHeader(http.StatusNotFound) // 해당 id의 학생 정보가 없으면 404 상태 코드 반환
+func GetStudentHandler(c *gin.Context) {
+	id_string := c.Param("id") // 파라미터 추출
+	if id_string == "" {
+		c.AbortWithStatus(http.StatusBadRequest) // 파라미터가 없으면 400 상태 코드 반환
 		return
 	}
-	w.Header().Add("content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(student)
+	id, err := strconv.Atoi(id_string) // 파라미터를 정수로 변환
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	student, ok := students[id] // 해당 id를 가진 학생 찾기
+	if !ok {
+		c.AbortWithStatus(http.StatusNotFound) // 학생이 없으면 404 상태 코드 반환
+		return
+	}
+	c.JSON(http.StatusOK, student) // 학생 정보를 JSON 형식으로 반환
 }
 
-func PostStudentHandler(w http.ResponseWriter, r *http.Request) {
-	student := Student{}
-	err := json.NewDecoder(r.Body).Decode(&student)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest) // 요청 본문이 유효하지 않으면 400 상태 코드 반환
+func PostStudentHandler(c *gin.Context) {
+	var student Student
+	if err := c.ShouldBindJSON(&student); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	lastId++
-	students[lastId] = student        // 맵에 학생 추가
-	w.WriteHeader(http.StatusCreated) // 201 상태 코드 반환 (학생 추가 성공)
+	student.Id = lastId
+	students[lastId] = student
+	c.String(http.StatusCreated, "%d번 학생이 추가되었습니다.", lastId)
 }
 
-func DeleteStudentHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
-	if _, ok := students[id]; !ok {
-		w.WriteHeader(http.StatusNotFound) // 해당 id의 학생 정보가 없으면 404 상태 코드 반환
+func DeleteStudentHandler(c *gin.Context) {
+	id_string := c.Param("id") // 파라미터 추출
+	if id_string == "" {
+		c.AbortWithStatus(http.StatusBadRequest) // 파라미터가 없으면 400 상태 코드 반환
 		return
 	}
-	delete(students, id) // go안에 내장되어 있는 맵 속 데이터 삭제 함수
-	w.WriteHeader(http.StatusOK)
+	id, err := strconv.Atoi(id_string)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error()) // 파라미터가 정수가 아니면 400 상태 코드 반환
+		return
+	}
+	delete(students, id)
+	c.String(http.StatusOK, "%d번 학생이 삭제되었습니다.", id) // 학생 삭제 메시지 반환
 }
 
 func main() {
-	http.ListenAndServe(":8080", MakeWebHandler())
+	r := gin.Default()
+	SetupHandler(r)
+	r.Run(":8080")
 }
