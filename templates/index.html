@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리소스 관리</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 5px 10px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: black;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .actions {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>리소스 관리</h1>
+    
+    <!-- 리소스 생성 폼 -->
+    <div class="container">
+        <h2>새 리소스 생성</h2>
+        <div class="form-group">
+            <input type="text" id="resourceName" placeholder="리소스 이름">
+            <button onclick="createResource()" class="btn btn-primary">생성</button>
+        </div>
+    </div>
+
+    <!-- 리소스 목록 -->
+    <div class="container">
+        <h2>리소스 목록</h2>
+        <div id="resourceList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>이름</th>
+                        <th>생성일</th>
+                        <th>수정일</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="resourceTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/ui.js"></script>
+</body>
+</html> 

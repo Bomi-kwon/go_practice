@@ -8,8 +8,8 @@ import (
 // Repository 인터페이스는 비즈니스 로직을 위한 데이터 접근 계층
 type Repository interface {
 	Create(ctx context.Context, entity interface{}) error
-	FindByID(ctx context.Context, id uint) (interface{}, error)
-	Find(ctx context.Context) ([]interface{}, error)
+	Get(ctx context.Context, id uint) (interface{}, error)
+	List(ctx context.Context) ([]interface{}, error)
 	Update(ctx context.Context, entity interface{}) error
 	Delete(ctx context.Context, entity interface{}) error
 }
@@ -31,16 +31,16 @@ func (r *repository) Create(ctx context.Context, entity interface{}) error {
 	return nil
 }
 
-func (r *repository) FindByID(ctx context.Context, id uint) (interface{}, error) {
-	result, err := r.recorder.FindByID(ctx, id)
+func (r *repository) Get(ctx context.Context, id uint) (interface{}, error) {
+	result, err := r.recorder.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (r *repository) Find(ctx context.Context) ([]interface{}, error) {
-	results, err := r.recorder.Find(ctx)
+func (r *repository) List(ctx context.Context) ([]interface{}, error) {
+	results, err := r.recorder.List(ctx)
 	if err != nil {
 		return nil, err
 	}

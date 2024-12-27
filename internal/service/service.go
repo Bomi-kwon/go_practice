@@ -33,7 +33,7 @@ func (s *service) Create(ctx context.Context, entity interface{}) error {
 }
 
 func (s *service) Get(ctx context.Context, id uint) (interface{}, error) {
-	result, err := s.repo.FindByID(ctx, id)
+	result, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("조회 실패: %v", err)
 	}
@@ -41,7 +41,7 @@ func (s *service) Get(ctx context.Context, id uint) (interface{}, error) {
 }
 
 func (s *service) List(ctx context.Context) ([]interface{}, error) {
-	results, err := s.repo.Find(ctx)
+	results, err := s.repo.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("목록 조회 실패: %v", err)
 	}
@@ -50,7 +50,7 @@ func (s *service) List(ctx context.Context) ([]interface{}, error) {
 
 func (s *service) Update(ctx context.Context, id uint, entity interface{}) error {
 	// 먼저 존재하는지 확인
-	_, err := s.repo.FindByID(ctx, id)
+	_, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return fmt.Errorf("업데이트할 엔티티를 찾을 수 없습니다: %v", err)
 	}
@@ -63,7 +63,7 @@ func (s *service) Update(ctx context.Context, id uint, entity interface{}) error
 
 func (s *service) Delete(ctx context.Context, id uint) error {
 	// 먼저 존재하는지 확인
-	entity, err := s.repo.FindByID(ctx, id)
+	entity, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return fmt.Errorf("삭제할 엔티티를 찾을 수 없습니다: %v", err)
 	}

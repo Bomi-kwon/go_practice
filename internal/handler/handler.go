@@ -21,6 +21,16 @@ func NewHandler(svc service.Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
+	// 정적 파일 제공 설정
+	r.Static("/static", "./static")
+	r.LoadHTMLGlob("templates/*")
+
+	// 메인 페이지 라우트
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
+	})
+
+	// API 라우트
 	api := r.Group("/api")
 	{
 		v1 := api.Group("/v1")
@@ -81,8 +91,8 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 func (h *Handler) Create(c *gin.Context) {
-	var resource interface{}
-	if err := c.ShouldBindJSON(&resource); err != nil {
+	var base model.Base
+	if err := c.ShouldBindJSON(&base); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status:  http.StatusBadRequest,
 			Message: "잘못된 요청 데이터",
@@ -91,7 +101,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Create(c, resource); err != nil {
+	if err := h.svc.Create(c, &base); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Status:  http.StatusInternalServerError,
 			Message: "리소스 생성 실패",
@@ -103,7 +113,7 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, model.Response{
 		Status:  http.StatusCreated,
 		Message: "성공",
-		Data:    resource,
+		Data:    base,
 	})
 }
 
@@ -118,8 +128,8 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	var resource interface{}
-	if err := c.ShouldBindJSON(&resource); err != nil {
+	var base model.Base
+	if err := c.ShouldBindJSON(&base); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Status:  http.StatusBadRequest,
 			Message: "잘못된 요청 데이터",
@@ -128,7 +138,8 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Update(c, uint(id), resource); err != nil {
+	base.ID = uint(id)
+	if err := h.svc.Update(c, uint(id), &base); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Response{
 			Status:  http.StatusInternalServerError,
 			Message: "리소스 수정 실패",
@@ -140,7 +151,7 @@ func (h *Handler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Response{
 		Status:  http.StatusOK,
 		Message: "성공",
-		Data:    resource,
+		Data:    base,
 	})
 }
 
