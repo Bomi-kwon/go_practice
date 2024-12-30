@@ -9,11 +9,11 @@ import (
 
 // Recorder는 DB와 직접 상호작용하는 인터페이스
 type Recorder interface {
-	Create(ctx context.Context, entity interface{}) error
-	Get(ctx context.Context, id uint) (interface{}, error)
-	List(ctx context.Context) ([]interface{}, error)
-	Update(ctx context.Context, entity interface{}) error
-	Delete(ctx context.Context, entity interface{}) error
+	Insert(ctx context.Context, model *model.Base) error
+	Get(ctx context.Context, id uint) (*model.Base, error)
+	GetAll(ctx context.Context) ([]*model.Base, error)
+	Modify(ctx context.Context, model *model.Base) error
+	Remove(ctx context.Context, model *model.Base) error
 }
 
 type recorder struct {
@@ -21,39 +21,35 @@ type recorder struct {
 }
 
 func NewRecorder(db *gorm.DB) Recorder {
-	return &recorder{db: db}
+	return &recorder{
+		db: db,
+	}
 }
 
-func (r *recorder) Create(ctx context.Context, entity interface{}) error {
-	return r.db.WithContext(ctx).Create(entity).Error
+func (r *recorder) Insert(ctx context.Context, model *model.Base) error {
+	return r.db.WithContext(ctx).Create(model).Error
 }
 
-func (r *recorder) Get(ctx context.Context, id uint) (interface{}, error) {
+func (r *recorder) Get(ctx context.Context, id uint) (*model.Base, error) {
 	var base model.Base
 	if err := r.db.WithContext(ctx).First(&base, id).Error; err != nil {
 		return nil, err
 	}
-	return base, nil
+	return &base, nil
 }
 
-func (r *recorder) List(ctx context.Context) ([]interface{}, error) {
-	var bases []model.Base
+func (r *recorder) GetAll(ctx context.Context) ([]*model.Base, error) {
+	var bases []*model.Base
 	if err := r.db.WithContext(ctx).Find(&bases).Error; err != nil {
 		return nil, err
 	}
-
-	// []model.Base를 []interface{}로 변환
-	result := make([]interface{}, len(bases))
-	for i, v := range bases {
-		result[i] = v
-	}
-	return result, nil
+	return bases, nil
 }
 
-func (r *recorder) Update(ctx context.Context, entity interface{}) error {
-	return r.db.WithContext(ctx).Save(entity).Error
+func (r *recorder) Modify(ctx context.Context, model *model.Base) error {
+	return r.db.WithContext(ctx).Save(model).Error
 }
 
-func (r *recorder) Delete(ctx context.Context, entity interface{}) error {
-	return r.db.WithContext(ctx).Delete(entity).Error
+func (r *recorder) Remove(ctx context.Context, model *model.Base) error {
+	return r.db.WithContext(ctx).Delete(model).Error
 }

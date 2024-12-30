@@ -1,22 +1,21 @@
 package handler
 
 import (
+	"go_project/internal/model"
+	"go_project/internal/usecase"
 	"net/http"
 	"strconv"
-
-	"go_project/internal/model"
-	"go_project/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	svc service.Service
+	uc usecase.Usecase
 }
 
-func NewHandler(svc service.Service) *Handler {
+func NewHandler(uc usecase.Usecase) *Handler {
 	return &Handler{
-		svc: svc,
+		uc: uc,
 	}
 }
 
@@ -35,149 +34,154 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	{
 		v1 := api.Group("/v1")
 		{
-			v1.GET("/resources", h.List)
+			// 최종 엔드포인트 URL들:
+			// GET    /api/v1/resources     - 전체 리소스 목록 조회
+			// GET    /api/v1/resources/:id - 특정 ID의 리소스 조회 (예: /api/v1/resources/1)
+			// POST   /api/v1/resources     - 새로운 리소스 생성
+			// PUT    /api/v1/resources/:id - 특정 ID의 리소스 수정 (예: /api/v1/resources/1)
+			// DELETE /api/v1/resources/:id - 특정 ID의 리소스 삭제 (예: /api/v1/resources/1)
+			v1.GET("/resources", h.GetAll)
 			v1.GET("/resources/:id", h.Get)
-			v1.POST("/resources", h.Create)
-			v1.PUT("/resources/:id", h.Update)
-			v1.DELETE("/resources/:id", h.Delete)
+			v1.POST("/resources", h.Insert)
+			v1.PUT("/resources/:id", h.Modify)
+			v1.DELETE("/resources/:id", h.Remove)
 		}
 	}
 }
 
-func (h *Handler) List(c *gin.Context) {
-	results, err := h.svc.List(c)
+func (h *Handler) GetAll(c *gin.Context) {
+	results, err := h.uc.GetAll(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "리소스 목록 조회 실패",
-			Data:    nil,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "리소스 목록 조회 실패",
+			"data":    nil,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Response{
-		Status:  http.StatusOK,
-		Message: "성공",
-		Data:    results,
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "성공",
+		"data":    results,
 	})
 }
 
 func (h *Handler) Get(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status:  http.StatusBadRequest,
-			Message: "잘못된 ID 형식",
-			Data:    nil,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "잘못된 ID 형식",
+			"data":    nil,
 		})
 		return
 	}
 
-	result, err := h.svc.Get(c, uint(id))
+	result, err := h.uc.Get(c, uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "리소스 조회 실패",
-			Data:    nil,
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "리소스 조회 실패",
+			"data":    nil,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Response{
-		Status:  http.StatusOK,
-		Message: "성공",
-		Data:    result,
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "성공",
+		"data":    result,
 	})
 }
 
-func (h *Handler) Create(c *gin.Context) {
-	var base model.Base
-	if err := c.ShouldBindJSON(&base); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status:  http.StatusBadRequest,
-			Message: "잘못된 요청 데이터",
-			Data:    nil,
+func (h *Handler) Insert(c *gin.Context) {
+	var resource model.Base
+	if err := c.ShouldBindJSON(&resource); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "잘못된 요청 데이터",
+			"data":    nil,
 		})
 		return
 	}
 
-	if err := h.svc.Create(c, &base); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "리소스 생성 실패",
-			Data:    nil,
+	if err := h.uc.Insert(c, &resource); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "리소스 생성 실패",
+			"data":    nil,
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, model.Response{
-		Status:  http.StatusCreated,
-		Message: "성공",
-		Data:    base,
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  http.StatusCreated,
+		"message": "성공",
+		"data":    resource,
 	})
 }
 
-func (h *Handler) Update(c *gin.Context) {
+func (h *Handler) Modify(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status:  http.StatusBadRequest,
-			Message: "잘못된 ID 형식",
-			Data:    nil,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "잘못된 ID 형식",
+			"data":    nil,
 		})
 		return
 	}
 
-	var base model.Base
-	if err := c.ShouldBindJSON(&base); err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status:  http.StatusBadRequest,
-			Message: "잘못된 요청 데이터",
-			Data:    nil,
+	var resource model.Base
+	if err := c.ShouldBindJSON(&resource); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "잘못된 요청 데이터",
+			"data":    nil,
 		})
 		return
 	}
 
-	base.ID = uint(id)
-	if err := h.svc.Update(c, uint(id), &base); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "리소스 수정 실패",
-			Data:    nil,
+	if err := h.uc.Modify(c, uint(id), &resource); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "리소스 수정 실패",
+			"data":    nil,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Response{
-		Status:  http.StatusOK,
-		Message: "성공",
-		Data:    base,
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "성공",
+		"data":    resource,
 	})
 }
 
-func (h *Handler) Delete(c *gin.Context) {
+func (h *Handler) Remove(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Response{
-			Status:  http.StatusBadRequest,
-			Message: "잘못된 ID 형식",
-			Data:    nil,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "잘못된 ID 형식",
+			"data":    nil,
 		})
 		return
 	}
 
-	if err := h.svc.Delete(c, uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "리소스 삭제 실패",
-			Data:    nil,
+	if err := h.uc.Remove(c, uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "리소스 삭제 실패",
+			"data":    nil,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Response{
-		Status:  http.StatusOK,
-		Message: "성공",
-		Data:    nil,
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "성공",
+		"data":    nil,
 	})
 }

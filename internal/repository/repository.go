@@ -2,16 +2,17 @@ package repository
 
 import (
 	"context"
+	"go_project/internal/model"
 	"go_project/internal/recorder"
 )
 
 // Repository 인터페이스는 비즈니스 로직을 위한 데이터 접근 계층
 type Repository interface {
-	Create(ctx context.Context, entity interface{}) error
-	Get(ctx context.Context, id uint) (interface{}, error)
-	List(ctx context.Context) ([]interface{}, error)
-	Update(ctx context.Context, entity interface{}) error
-	Delete(ctx context.Context, entity interface{}) error
+	Insert(ctx context.Context, model *model.Base) error
+	Get(ctx context.Context, id uint) (*model.Base, error)
+	GetAll(ctx context.Context) ([]*model.Base, error)
+	Modify(ctx context.Context, model *model.Base) error
+	Remove(ctx context.Context, model *model.Base) error
 }
 
 type repository struct {
@@ -24,14 +25,11 @@ func NewRepository(recorder recorder.Recorder) Repository {
 	}
 }
 
-func (r *repository) Create(ctx context.Context, entity interface{}) error {
-	if err := r.recorder.Create(ctx, entity); err != nil {
-		return err
-	}
-	return nil
+func (r *repository) Insert(ctx context.Context, model *model.Base) error {
+	return r.recorder.Insert(ctx, model)
 }
 
-func (r *repository) Get(ctx context.Context, id uint) (interface{}, error) {
+func (r *repository) Get(ctx context.Context, id uint) (*model.Base, error) {
 	result, err := r.recorder.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -39,24 +37,18 @@ func (r *repository) Get(ctx context.Context, id uint) (interface{}, error) {
 	return result, nil
 }
 
-func (r *repository) List(ctx context.Context) ([]interface{}, error) {
-	results, err := r.recorder.List(ctx)
+func (r *repository) GetAll(ctx context.Context) ([]*model.Base, error) {
+	results, err := r.recorder.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return results, nil
 }
 
-func (r *repository) Update(ctx context.Context, entity interface{}) error {
-	if err := r.recorder.Update(ctx, entity); err != nil {
-		return err
-	}
-	return nil
+func (r *repository) Modify(ctx context.Context, model *model.Base) error {
+	return r.recorder.Modify(ctx, model)
 }
 
-func (r *repository) Delete(ctx context.Context, entity interface{}) error {
-	if err := r.recorder.Delete(ctx, entity); err != nil {
-		return err
-	}
-	return nil
+func (r *repository) Remove(ctx context.Context, model *model.Base) error {
+	return r.recorder.Remove(ctx, model)
 }

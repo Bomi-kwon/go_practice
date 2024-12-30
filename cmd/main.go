@@ -7,7 +7,7 @@ import (
 	"go_project/internal/handler"
 	"go_project/internal/recorder"
 	"go_project/internal/repository"
-	"go_project/internal/service"
+	"go_project/internal/usecase"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,11 +19,11 @@ func main() {
 		log.Fatalf("데이터베이스 초기화 실패: %v", err)
 	}
 
-	// Recorder, Repository, Service, Handler 초기화
+	// Recorder, Repository, Usecase, Handler 초기화
 	rec := recorder.NewRecorder(db)
 	repo := repository.NewRepository(rec)
-	svc := service.NewService(repo)
-	h := handler.NewHandler(svc)
+	uc := usecase.NewUsecase(repo)
+	h := handler.NewHandler(uc)
 
 	// Router 설정
 	r := gin.Default()
